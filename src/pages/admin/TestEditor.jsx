@@ -1,16 +1,35 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { addTest } from '../../utils/storage';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { addTest, updateTest, getTestById, getGroups } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 const EMPTY_Q = { text: '', options: ['', '', '', ''], correct: 0 };
 
-export default function CreateTest() {
+export default function TestEditor() {
   const navigate = useNavigate();
+  const { testId } = useParams();
+  
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(30);
+  const [groupId, setGroupId] = useState('');
   const [questions, setQuestions] = useState([structuredClone(EMPTY_Q)]);
   const [saving, setSaving] = useState(false);
+  const [groups, setGroups] = useState([]);
+  
+  useEffect(() => {
+    setGroups(getGroups());
+    if (testId) {
+      const test = getTestById(testId);
+      if (test) {
+        setTitle(test.title);
+        setDuration(test.duration);
+        setGroupId(test.groupId || '');
+        setQuestions(test.questions);
+      } else {
+        navigate('/admin/tests');
+      }
+    }
+  }, [testId, navigate]);
 
   const addQuestion = () => setQuestions([...questions, structuredClone(EMPTY_Q)]);
 
@@ -32,7 +51,12 @@ export default function CreateTest() {
     e.preventDefault();
     setSaving(true);
     setTimeout(() => {
-      addTest({ title, duration: Number(duration), questions });
+      const payload = { title, duration: Number(duration), groupId, questions };
+      if (testId) {
+        updateTest(testId, payload);
+      } else {
+        addTest(payload);
+      }
       navigate('/admin/tests');
     }, 300);
   };
@@ -43,8 +67,8 @@ export default function CreateTest() {
       <main className="container animate-slide-up" style={{ padding: '2.5rem 1rem' }}>
         <div className="page-header-row">
           <div>
-            <h1>Create New Test</h1>
-            <p>Add questions and set a timer for this test</p>
+            <h1>{testId ? 'Edit Test' : 'Create New Test'}</h1>
+            <p>{testId ? 'Modify test details and questions' : 'Add questions and set a timer for this test'}</p>
           </div>
           <button className="btn btn-secondary" onClick={() => navigate('/admin/tests')}>← Back</button>
         </div>
@@ -63,6 +87,15 @@ export default function CreateTest() {
                 <label className="input-label">Duration (minutes) *</label>
                 <input className="input-field" type="number" min={1} max={300} required value={duration}
                   onChange={(e) => setDuration(e.target.value)} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Assign to Student Group</label>
+                <select className="input-field" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
+                  <option value="">All Students</option>
+                  {groups.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTests, removeTest } from '../../utils/storage';
+import { getTests, removeTest, getGroups, getResultsByTest } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function ManageTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState(getTests);
+  const groups = getGroups();
 
   const refresh = () => setTests(getTests());
 
@@ -40,20 +41,35 @@ export default function ManageTests() {
           </div>
         ) : (
           <div className="tests-grid">
-            {tests.map((t) => (
-              <div key={t.id} className="test-card card">
-                <div className="test-card-header">
-                  <div className="test-icon">📝</div>
-                  <div className="test-badge">{t.duration} min</div>
+            {tests.map((t) => {
+              const groupLabel = t.groupId ? groups.find(g => g.id === t.groupId)?.name || 'Unknown Group' : 'All Students';
+              const resultsCount = getResultsByTest(t.id).length;
+
+              return (
+                <div key={t.id} className="test-card card">
+                  <div className="test-card-header">
+                    <div className="test-icon">📝</div>
+                    <div className="test-badge">{t.duration} min</div>
+                  </div>
+                  <h3 className="test-title">{t.title}</h3>
+                  <p className="test-meta">
+                    {(t.questions?.length ?? 0)} question{((t.questions?.length ?? 0) !== 1 ? 's' : '')}
+                    <span className="dot-divider">•</span> Assigned: <span className="group-badge">{groupLabel}</span>
+                  </p>
+                  <p className="test-date">Created: {new Date(t.createdAt).toLocaleDateString()}</p>
+                  
+                  <div className="test-stats-row">
+                    <span className="stat-pill">{resultsCount} Submission{resultsCount !== 1 ? 's' : ''}</span>
+                  </div>
+
+                  <div className="test-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/admin/results/test/${t.id}`)}>View Submissions</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/admin/tests/edit/${t.id}`)}>Edit</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Delete</button>
+                  </div>
                 </div>
-                <h3 className="test-title">{t.title}</h3>
-                <p className="test-meta">{t.questions?.length ?? 0} question{(t.questions?.length ?? 0) !== 1 ? 's' : ''}</p>
-                <p className="test-date">Created: {new Date(t.createdAt).toLocaleDateString()}</p>
-                <div className="test-actions">
-                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(t.id)}>Delete</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -89,9 +105,16 @@ export default function ManageTests() {
           color: var(--color-primary);
         }
         .test-title { font-size: 1.0625rem; font-weight: 700; }
-        .test-meta { font-size: 0.8125rem; color: var(--text-secondary); }
-        .test-date { font-size: 0.75rem; color: var(--text-muted); }
-        .test-actions { display: flex; justify-content: flex-end; margin-top: 0.75rem; }
+        .test-meta { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.25rem; }
+        .dot-divider { margin: 0 0.5rem; color: var(--border-color); }
+        .group-badge { font-weight: 600; color: var(--text-primary); }
+        .test-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        .test-stats-row { margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
+        .stat-pill { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); background: var(--bg-surface-hover); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); }
+
+        .test-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+        .test-actions .btn { flex: 1; text-align: center; }
 
         .empty-state {
           display: flex;

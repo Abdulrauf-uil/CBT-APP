@@ -5,8 +5,11 @@ import Navbar from '../../components/layout/Navbar';
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const student = getStudentSession();
-  const tests = getTests();
+  const allTests = getTests();
   const results = getResultsByStudent(student?.id ?? '');
+
+  // Filter tests: either assigned to All Students (no groupId) or matches student's groupId
+  const tests = allTests.filter(t => !t.groupId || t.groupId === student?.groupId);
 
   const getAttempts = (testId) => results.filter((r) => r.testId === testId).length;
 

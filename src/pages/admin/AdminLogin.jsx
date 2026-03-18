@@ -65,8 +65,6 @@ export default function AdminLogin() {
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
-
-          <p className="auth-hint">Default: <code>admin</code> / <code>admin123</code></p>
         </div>
       </main>
 

@@ -10,10 +10,10 @@ export default function Home() {
 
       <main className="home-main container animate-slide-up">
         <div className="home-hero">
+          <div className="hero-image-wrapper">
+            <img src="/front.png" alt="Hero Illustration" className="hero-image" />
+          </div>
           <h1 className="home-heading">Computer Based Test</h1>
-          <p className="home-subheading">
-            A reliable, structured platform for creating and taking online assessments.
-          </p>
         </div>
 
         <div className="home-cards">
@@ -51,24 +51,40 @@ export default function Home() {
 
         .home-hero {
           text-align: center;
-          max-width: 540px;
+          width: 100%;
+          max-width: 720px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1.5rem;
         }
 
         .home-heading {
-          font-size: clamp(2rem, 5vw, 3rem);
-          font-weight: 700;
+          font-size: clamp(2rem, 5vw, 3.5rem);
+          font-weight: 800;
           line-height: 1.2;
           background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          margin-bottom: 1rem;
+          margin-bottom: 0;
         }
 
-        .home-subheading {
-          font-size: 1.0625rem;
-          color: var(--text-secondary);
-          line-height: 1.65;
+        .hero-image-wrapper {
+          width: 100%;
+          max-width: 420px;
+          border-radius: var(--radius-xl);
+          overflow: hidden;
+          box-shadow: var(--shadow-2xl, 0 25px 50px -12px rgba(0,0,0,0.25));
+          border: 1px solid var(--border-color);
+          background: var(--bg-surface);
+        }
+
+        .hero-image {
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: cover;
         }
 
         .home-cards {

@@ -1,16 +1,33 @@
 import { useState } from 'react';
-import { getStudents, addStudent, removeStudent } from '../../utils/storage';
+import { getStudents, addStudent, removeStudent, getGroups, addGroup } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
-const EMPTY_FORM = { name: '', email: '', password: '' };
+const EMPTY_FORM = { name: '', email: '', password: '', groupId: '' };
 
 export default function ManageStudents() {
   const [students, setStudents] = useState(getStudents);
+  const [groups, setGroups] = useState(getGroups);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  const refresh = () => setStudents(getStudents());
+  // Group creation state
+  const [showNewGroup, setShowNewGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+
+  const refresh = () => {
+    setStudents(getStudents());
+    setGroups(getGroups());
+  };
+
+  const handleCreateGroup = () => {
+    if (!newGroupName.trim()) return;
+    const g = addGroup(newGroupName.trim());
+    refresh();
+    setForm({ ...form, groupId: g.id });
+    setNewGroupName('');
+    setShowNewGroup(false);
+  };
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -19,6 +36,7 @@ export default function ManageStudents() {
       setError('A student with that email already exists.');
       return;
     }
+    // groupId is optional.
     addStudent(form);
     refresh();
     setForm(EMPTY_FORM);
@@ -66,6 +84,24 @@ export default function ManageStudents() {
                   <input className="input-field" type="text" required placeholder="Set a password"
                     value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 </div>
+                <div className="input-group">
+                  <label className="input-label">Assign Group (Optional)</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <select className="input-field" style={{ flex: 1 }} value={form.groupId} onChange={(e) => setForm({ ...form, groupId: e.target.value })}>
+                      <option value="">None (All Students)</option>
+                      {groups.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowNewGroup(!showNewGroup)} title="Create New Group">+</button>
+                  </div>
+                  {showNewGroup && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <input className="input-field" placeholder="Group Name" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} style={{ flex: 1, padding: '0.4rem 0.75rem' }} />
+                      <button type="button" className="btn btn-primary" style={{ padding: '0.4rem 0.75rem' }} onClick={handleCreateGroup}>OK</button>
+                    </div>
+                  )}
+                </div>
               </div>
               {error && <p className="form-error">{error}</p>}
               <div className="form-actions">
@@ -82,16 +118,19 @@ export default function ManageStudents() {
           </div>
         ) : (
           <div className="student-list">
-            {students.map((s) => (
-              <div key={s.id} className="student-row card">
-                <div className="student-avatar">{s.name.charAt(0).toUpperCase()}</div>
-                <div className="student-info">
-                  <div className="student-name">{s.name}</div>
-                  <div className="student-email">{s.email}</div>
+            {students.map((s) => {
+              const groupLabel = s.groupId ? groups.find(g => g.id === s.groupId)?.name || 'Unknown Group' : 'All Students';
+              return (
+                <div key={s.id} className="student-row card">
+                  <div className="student-avatar">{s.name.charAt(0).toUpperCase()}</div>
+                  <div className="student-info">
+                    <div className="student-name">{s.name} <span className="group-badge">{groupLabel}</span></div>
+                    <div className="student-email">{s.email}</div>
+                  </div>
+                  <button className="btn btn-danger btn-sm" onClick={() => handleRemove(s.id)}>Remove</button>
                 </div>
-                <button className="btn btn-danger btn-sm" onClick={() => handleRemove(s.id)}>Remove</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
@@ -148,7 +187,11 @@ export default function ManageStudents() {
           flex-shrink: 0;
         }
         .student-info { flex: 1; min-width: 0; }
-        .student-name { font-weight: 600; font-size: 0.9375rem; }
+        .student-name { font-weight: 600; font-size: 0.9375rem; display: flex; align-items: center; gap: 0.5rem; }
+        .group-badge {
+          font-size: 0.6875rem; background: var(--bg-surface-hover); color: var(--text-secondary);
+          padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);
+        }
         .student-email { font-size: 0.8125rem; color: var(--text-secondary); }
 
         .empty-state {

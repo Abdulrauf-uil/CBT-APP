@@ -7,7 +7,9 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageStudents from './pages/admin/ManageStudents';
 import ManageTests from './pages/admin/ManageTests';
-import CreateTest from './pages/admin/CreateTest';
+import TestEditor from './pages/admin/TestEditor';
+import TestSubmissions from './pages/admin/TestSubmissions';
+import AdminResultDetail from './pages/admin/AdminResultDetail';
 import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';
 import TakeTest from './pages/student/TakeTest';
@@ -34,7 +36,10 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/students" element={<AdminRoute><ManageStudents /></AdminRoute>} />
         <Route path="/admin/tests" element={<AdminRoute><ManageTests /></AdminRoute>} />
-        <Route path="/admin/tests/create" element={<AdminRoute><CreateTest /></AdminRoute>} />
+        <Route path="/admin/tests/create" element={<AdminRoute><TestEditor /></AdminRoute>} />
+        <Route path="/admin/tests/edit/:testId" element={<AdminRoute><TestEditor /></AdminRoute>} />
+        <Route path="/admin/results/test/:testId" element={<AdminRoute><TestSubmissions /></AdminRoute>} />
+        <Route path="/admin/results/:resultId" element={<AdminRoute><AdminResultDetail /></AdminRoute>} />
 
         {/* Student */}
         <Route path="/student/login" element={<StudentLogin />} />

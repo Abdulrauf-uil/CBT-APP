@@ -16,7 +16,7 @@ export default function AdminDashboard() {
 
   const actions = [
     { label: 'Manage Students', desc: 'Add or remove registered students', icon: '👥', path: '/admin/students' },
-    { label: 'Manage Tests', desc: 'View and delete existing tests', icon: '📋', path: '/admin/tests' },
+    { label: 'Manage Tests', desc: 'View, edit, and delete existing tests', icon: '📋', path: '/admin/tests' },
     { label: 'Create New Test', desc: 'Build a new timed multiple-choice test', icon: '➕', path: '/admin/tests/create' },
   ];
 

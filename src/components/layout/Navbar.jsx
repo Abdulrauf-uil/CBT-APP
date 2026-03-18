@@ -6,6 +6,7 @@ export default function Navbar({ role, userName }) {
   const location = useLocation();
 
   const isHome = location.pathname === '/';
+  const isLoginPage = location.pathname.includes('/login');
 
   const handleLogout = () => {
     if (role === 'admin') {
@@ -22,12 +23,22 @@ export default function Navbar({ role, userName }) {
   return (
     <header className="navbar">
       <div className="navbar-inner container">
-        <div className="navbar-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <span className="navbar-logo">📋</span>
-          <span className="navbar-title">CBT Portal</span>
+        <div className="navbar-left">
+          <div className="navbar-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+            <img src="/logo.png" alt="Logo" className="navbar-logo-img" />
+            <span className="navbar-title">CBT Portal</span>
+          </div>
+
+          {role === 'admin' && (
+            <nav className="navbar-menu">
+              <span className="nav-link" onClick={() => navigate('/admin/dashboard')}>Dashboard</span>
+              <span className="nav-link" onClick={() => navigate('/admin/students')}>Students</span>
+              <span className="nav-link" onClick={() => navigate('/admin/tests')}>Tests</span>
+            </nav>
+          )}
         </div>
 
-        {!isHome && (
+        {!isHome && !isLoginPage && (
           <div className="navbar-right">
             {userName && (
               <span className="navbar-user">
@@ -62,14 +73,40 @@ export default function Navbar({ role, userName }) {
           justify-content: space-between;
         }
 
+        .navbar-left {
+          display: flex;
+          align-items: center;
+          gap: 2rem;
+        }
+
         .navbar-brand {
           display: flex;
           align-items: center;
           gap: 0.5rem;
         }
 
-        .navbar-logo {
-          font-size: 1.4rem;
+        .navbar-menu {
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+        }
+
+        .nav-link {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+          color: var(--color-primary);
+        }
+
+        .navbar-logo-img {
+          height: 36px;
+          border-radius: var(--radius-sm);
+          object-fit: contain;
         }
 
         .navbar-title {

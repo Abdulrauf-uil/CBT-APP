@@ -7,6 +7,7 @@ const KEYS = {
   STUDENTS: 'cbt_students',
   TESTS: 'cbt_tests',
   RESULTS: 'cbt_results',
+  GROUPS: 'cbt_groups',
   STUDENT_SESSION: 'cbt_student_session',
   ADMIN_SESSION: 'cbt_admin_session',
 };
@@ -30,7 +31,7 @@ const set = (key, value) => {
 // ──────────────────────────────────────────────────────────────
 //  Admin Credentials
 // ──────────────────────────────────────────────────────────────
-const DEFAULT_ADMIN = { username: 'admin', password: 'admin123' };
+const DEFAULT_ADMIN = { username: 'admin', password: 'admin911' };
 
 export const getAdmin = () => get(KEYS.ADMIN) ?? DEFAULT_ADMIN;
 
@@ -47,12 +48,31 @@ export const clearAdminSession = () => localStorage.removeItem(KEYS.ADMIN_SESSIO
 export const isAdminLoggedIn = () => !!get(KEYS.ADMIN_SESSION)?.loggedIn;
 
 // ──────────────────────────────────────────────────────────────
+//  Groups
+// ──────────────────────────────────────────────────────────────
+// A group is just { id, name, createdAt }
+export const getGroups = () => get(KEYS.GROUPS) ?? [];
+
+export const addGroup = (name) => {
+  const groups = getGroups();
+  const newGroup = { id: crypto.randomUUID(), name, createdAt: Date.now() };
+  set(KEYS.GROUPS, [...groups, newGroup]);
+  return newGroup;
+};
+
+export const deleteGroup = (id) => {
+  set(KEYS.GROUPS, getGroups().filter((g) => g.id !== id));
+  // Optional: Also remove this groupId from any students that have it
+};
+
+// ──────────────────────────────────────────────────────────────
 //  Students
 // ──────────────────────────────────────────────────────────────
 export const getStudents = () => get(KEYS.STUDENTS) ?? [];
 
 export const addStudent = (student) => {
   const students = getStudents();
+  // student should now optionally include `groupId`
   const newStudent = { ...student, id: crypto.randomUUID(), createdAt: Date.now() };
   set(KEYS.STUDENTS, [...students, newStudent]);
   return newStudent;
@@ -81,9 +101,16 @@ export const getTestById = (id) => getTests().find((t) => t.id === id) ?? null;
 
 export const addTest = (test) => {
   const tests = getTests();
+  // test should now include `groupId` (or 'all')
   const newTest = { ...test, id: crypto.randomUUID(), createdAt: Date.now() };
   set(KEYS.TESTS, [...tests, newTest]);
   return newTest;
+};
+
+export const updateTest = (id, updatedFields) => {
+  const tests = getTests();
+  const updatedTests = tests.map(t => t.id === id ? { ...t, ...updatedFields } : t);
+  set(KEYS.TESTS, updatedTests);
 };
 
 export const removeTest = (id) => {
@@ -104,3 +131,6 @@ export const saveResult = (result) => {
 
 export const getResultsByStudent = (studentId) =>
   getResults().filter((r) => r.studentId === studentId);
+
+export const getResultsByTest = (testId) =>
+  getResults().filter((r) => r.testId === testId);
