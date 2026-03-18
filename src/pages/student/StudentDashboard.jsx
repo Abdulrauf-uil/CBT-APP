@@ -39,15 +39,19 @@ export default function StudentDashboard() {
                       <span className="badge badge-primary">{t.duration} min</span>
                       <span className="badge badge-neutral">{t.questions?.length ?? 0} Qs</span>
                       {attempts > 0 && <span className="badge badge-green">Attempted ×{attempts}</span>}
+                      {t.attempts > 0 && <span className="badge badge-neutral">Limit: {t.attempts}</span>}
                     </div>
                   </div>
                   <h3 className="test-title">{t.title}</h3>
 
                   <button
-                    className="btn btn-primary start-btn"
+                    className={`btn start-btn ${attempts >= t.attempts && t.attempts > 0 ? 'btn-secondary' : 'btn-primary'}`}
+                    disabled={attempts >= t.attempts && t.attempts > 0}
                     onClick={() => navigate(`/student/test/${t.id}`)}
                   >
-                    {attempts > 0 ? 'Retake Test' : 'Start Test'} →
+                    {t.attempts > 0 && attempts >= t.attempts 
+                      ? 'Limit Reached' 
+                      : (attempts > 0 ? 'Retake Test' : 'Start Test') + ' →'}
                   </button>
                 </div>
               );

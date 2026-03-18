@@ -11,7 +11,6 @@ export default function AdminDashboard() {
   const stats = [
     { label: 'Students', value: students.length, icon: '👥', color: '#4F46E5' },
     { label: 'Tests', value: tests.length, icon: '📝', color: '#0ea5e9' },
-    { label: 'Submissions', value: results.length, icon: '✅', color: '#22c55e' },
   ];
 
   const actions = [

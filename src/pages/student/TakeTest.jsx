@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTestById, getStudentSession, saveResult } from '../../utils/storage';
+import { getTestById, getStudentSession, saveResult, getResultsByStudent } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
+import MathRenderer from '../../components/common/MathRenderer';
 
 export default function TakeTest() {
   const { testId } = useParams();
   const navigate = useNavigate();
   const student = getStudentSession();
   const test = getTestById(testId);
+  const results = getResultsByStudent(student?.id ?? '');
 
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -53,7 +55,31 @@ export default function TakeTest() {
     );
   }
 
-  const q = test.questions[current];
+  // Check attempt limit
+  const attemptCount = results.filter(r => r.testId === test.id).length;
+  if (test.attempts > 0 && attemptCount >= test.attempts && !submitted) {
+    return (
+      <div className="take-test-page">
+        <Navbar role="student" userName={student?.name} />
+        <main className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+          <h2>Attempt Limit Reached</h2>
+          <p>You have already completed this test the maximum number of times allowed ({test.attempts}).</p>
+          <button className="btn btn-primary" style={{ marginTop: '1rem' }}
+            onClick={() => navigate('/student/dashboard')}>Back to Dashboard</button>
+        </main>
+      </div>
+    );
+  }
+
+  // Normalize current question for backward compatibility
+  const rawQ = test.questions[current];
+  const q = {
+    ...rawQ,
+    image: rawQ.image || null,
+    options: rawQ.options.map(opt => 
+      typeof opt === 'string' ? { text: opt, image: null } : opt
+    )
+  };
   const totalQ = test.questions.length;
   const answered = Object.keys(answers).length;
   const progress = (answered / totalQ) * 100;
@@ -85,7 +111,14 @@ export default function TakeTest() {
       <main className="container animate-slide-up" style={{ padding: '2rem 1rem' }}>
         <div className="question-card card">
           <div className="q-number">Q{current + 1}</div>
-          <h2 className="q-text">{q.text}</h2>
+          <div className="q-content">
+            <MathRenderer text={q.text} className="q-text" />
+            {q.image && (
+              <div className="q-image-container">
+                <img src={q.image} alt="Question" className="q-image" />
+              </div>
+            )}
+          </div>
 
           <div className="options-list">
             {q.options.map((opt, oi) => {
@@ -96,8 +129,11 @@ export default function TakeTest() {
                   className={`option-btn ${selected ? 'option-selected' : ''}`}
                   onClick={() => setAnswers({ ...answers, [current]: oi })}
                 >
-                  <span className="option-letter">{String.fromCharCode(65 + oi)}</span>
-                  <span className="option-text">{opt}</span>
+                  <div className="option-content">
+                    <span className="option-letter">{String.fromCharCode(65 + oi)}</span>
+                    <MathRenderer text={opt.text} className="option-text" />
+                  </div>
+                  {opt.image && <img src={opt.image} alt="" className="opt-image" />}
                 </button>
               );
             })}

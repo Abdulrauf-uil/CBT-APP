@@ -2,8 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addTest, updateTest, getTestById, getGroups } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
+import MathRenderer from '../../components/common/MathRenderer';
+import ImageUpload from '../../components/common/ImageUpload';
 
-const EMPTY_Q = { text: '', options: ['', '', '', ''], correct: 0 };
+const EMPTY_Q = { 
+  text: '', 
+  image: null, 
+  options: [
+    { text: '', image: null },
+    { text: '', image: null },
+    { text: '', image: null },
+    { text: '', image: null }
+  ], 
+  correct: 0 
+};
 
 export default function TestEditor() {
   const navigate = useNavigate();
@@ -11,6 +23,7 @@ export default function TestEditor() {
   
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(30);
+  const [attempts, setAttempts] = useState(1);
   const [groupId, setGroupId] = useState('');
   const [questions, setQuestions] = useState([structuredClone(EMPTY_Q)]);
   const [saving, setSaving] = useState(false);
@@ -23,8 +36,18 @@ export default function TestEditor() {
       if (test) {
         setTitle(test.title);
         setDuration(test.duration);
+        setAttempts(test.attempts ?? 1);
         setGroupId(test.groupId || '');
-        setQuestions(test.questions);
+        
+        // Normalize questions for backward compatibility
+        const normalizedQs = test.questions.map(q => ({
+          ...q,
+          image: q.image || null,
+          options: q.options.map(opt => 
+            typeof opt === 'string' ? { text: opt, image: null } : opt
+          )
+        }));
+        setQuestions(normalizedQs);
       } else {
         navigate('/admin/tests');
       }
@@ -39,11 +62,11 @@ export default function TestEditor() {
   const updateQ = (qi, field, val) =>
     setQuestions(questions.map((q, i) => (i === qi ? { ...q, [field]: val } : q)));
 
-  const updateOption = (qi, oi, val) =>
+  const updateOption = (qi, oi, field, val) =>
     setQuestions(questions.map((q, i) => {
       if (i !== qi) return q;
       const opts = [...q.options];
-      opts[oi] = val;
+      opts[oi] = { ...opts[oi], [field]: val };
       return { ...q, options: opts };
     }));
 
@@ -51,7 +74,7 @@ export default function TestEditor() {
     e.preventDefault();
     setSaving(true);
     setTimeout(() => {
-      const payload = { title, duration: Number(duration), groupId, questions };
+      const payload = { title, duration: Number(duration), attempts: Number(attempts), groupId, questions };
       if (testId) {
         updateTest(testId, payload);
       } else {
@@ -89,6 +112,11 @@ export default function TestEditor() {
                   onChange={(e) => setDuration(e.target.value)} />
               </div>
               <div className="input-group">
+                <label className="input-label">Max Attempts (0 for unlimited)</label>
+                <input className="input-field" type="number" min={0} max={100} value={attempts}
+                  onChange={(e) => setAttempts(e.target.value)} />
+              </div>
+              <div className="input-group">
                 <label className="input-label">Assign to Student Group</label>
                 <select className="input-field" value={groupId} onChange={(e) => setGroupId(e.target.value)}>
                   <option value="">All Students</option>
@@ -117,23 +145,44 @@ export default function TestEditor() {
                 </div>
 
                 <div className="input-group">
-                  <label className="input-label">Question Text *</label>
-                  <input className="input-field" required value={q.text}
+                  <label className="input-label">Question Text (supports LaTeX like $E=mc^2$) *</label>
+                  <textarea className="input-field" required value={q.text}
+                    rows={2}
                     onChange={(e) => updateQ(qi, 'text', e.target.value)}
-                    placeholder="Type your question here…" />
+                    placeholder="Type your question here…" 
+                    style={{ resize: 'vertical' }}
+                  />
+                  {q.text && <MathRenderer text={q.text} className="q-preview" />}
+                  <ImageUpload 
+                    image={q.image} 
+                    onUpload={(img) => updateQ(qi, 'image', img)}
+                    onClear={() => updateQ(qi, 'image', null)}
+                    label="Add Question Image"
+                  />
                 </div>
 
                 <div className="options-grid">
                   {q.options.map((opt, oi) => (
-                    <div key={oi} className={`option-row ${q.correct === oi ? 'option-correct' : ''}`}>
-                      <button type="button" className={`correct-dot ${q.correct === oi ? 'active' : ''}`}
-                        title="Mark as correct answer"
-                        onClick={() => updateQ(qi, 'correct', oi)}>
-                        {q.correct === oi ? '✓' : String.fromCharCode(65 + oi)}
-                      </button>
-                      <input className="input-field option-input" required value={opt}
-                        onChange={(e) => updateOption(qi, oi, e.target.value)}
-                        placeholder={`Option ${String.fromCharCode(65 + oi)}`} />
+                    <div key={oi} className={`option-wrapper ${q.correct === oi ? 'option-correct' : ''}`}>
+                      <div className="option-row">
+                        <button type="button" className={`correct-dot ${q.correct === oi ? 'active' : ''}`}
+                          title="Mark as correct answer"
+                          onClick={() => updateQ(qi, 'correct', oi)}>
+                          {q.correct === oi ? '✓' : String.fromCharCode(65 + oi)}
+                        </button>
+                        <input className="input-field option-input" required value={opt.text}
+                          onChange={(e) => updateOption(qi, oi, 'text', e.target.value)}
+                          placeholder={`Option ${String.fromCharCode(65 + oi)}`} />
+                      </div>
+                      <div style={{ marginLeft: '42px', marginTop: '0.25rem' }}>
+                        {opt.text && <MathRenderer text={opt.text} className="opt-preview" />}
+                        <ImageUpload 
+                          image={opt.image} 
+                          onUpload={(img) => updateOption(qi, oi, 'image', img)}
+                          onClear={() => updateOption(qi, oi, 'image', null)}
+                          label="Add Option Image"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -162,7 +211,8 @@ export default function TestEditor() {
 
         .meta-card { padding: 1.5rem; margin-bottom: 1.5rem; }
         .meta-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-        .meta-grid { display: grid; grid-template-columns: 1fr auto; gap: 0 1.25rem; }
+        .meta-grid { display: grid; grid-template-columns: 1fr 120px 120px 1fr; gap: 0 1.25rem; }
+        @media (max-width: 768px) { .meta-grid { grid-template-columns: 1fr; } }
 
         .questions-section { margin-bottom: 1.5rem; }
         .questions-header {
@@ -178,9 +228,13 @@ export default function TestEditor() {
           border-radius: var(--radius-full);
         }
 
-        .options-grid { display: flex; flex-direction: column; gap: 0.625rem; margin-bottom: 0.5rem; }
+        .option-wrapper { display: flex; flex-direction: column; gap: 0.25rem; }
         .option-row { display: flex; align-items: center; gap: 0.625rem; }
-        .option-row.option-correct .option-input { border-color: var(--color-success); }
+        .option-correct .option-input { border-color: var(--color-success); }
+        .q-preview, .opt-preview { 
+          margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-surface-hover); 
+          border-radius: var(--radius-md); font-size: 0.9rem;
+        }
 
         .correct-dot {
           width: 32px; height: 32px; border-radius: var(--radius-full); flex-shrink: 0;

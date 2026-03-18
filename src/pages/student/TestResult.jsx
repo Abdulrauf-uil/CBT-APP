@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getResults } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 import { getStudentSession } from '../../utils/storage';
+import MathRenderer from '../../components/common/MathRenderer';
 
 export default function TestResult() {
   const { resultId } = useParams();
@@ -59,7 +60,14 @@ export default function TestResult() {
         {/* Answer Breakdown */}
         <h2 className="section-title">Answer Review</h2>
         <div className="breakdown-list">
-          {result.questions.map((q, i) => {
+           {result.questions.map((rawQ, i) => {
+            const q = {
+              ...rawQ,
+              image: rawQ.image || null,
+              options: rawQ.options.map(opt => 
+                typeof opt === 'string' ? { text: opt, image: null } : opt
+              )
+            };
             const studentAns = result.answers[i];
             const isCorrect = studentAns === q.correct;
             return (
@@ -70,7 +78,10 @@ export default function TestResult() {
                     {isCorrect ? '✓ Correct' : '✗ Incorrect'}
                   </span>
                 </div>
-                <p className="bk-qtext">{q.text}</p>
+                <div className="bk-q-content">
+                  <MathRenderer text={q.text} className="bk-qtext" />
+                  {q.image && <img src={q.image} alt="" className="bk-qimage" />}
+                </div>
                 <div className="bk-options">
                   {q.options.map((opt, oi) => {
                     const isStudentChoice = studentAns === oi;
@@ -79,11 +90,14 @@ export default function TestResult() {
                     if (isCorrectOpt) cls += ' bk-opt-correct';
                     if (isStudentChoice && !isCorrectOpt) cls += ' bk-opt-wrong';
                     return (
-                      <div key={oi} className={cls}>
-                        <span className="bk-letter">{String.fromCharCode(65 + oi)}</span>
-                        <span>{opt}</span>
-                        {isCorrectOpt && <span className="bk-tag bk-tag-green">Correct Answer</span>}
-                        {isStudentChoice && !isCorrectOpt && <span className="bk-tag bk-tag-red">Your Answer</span>}
+                      <div key={oi} className={cls} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%' }}>
+                          <span className="bk-letter">{String.fromCharCode(65 + oi)}</span>
+                          <MathRenderer text={opt.text} />
+                          {isCorrectOpt && <span className="bk-tag bk-tag-green">Correct Answer</span>}
+                          {isStudentChoice && !isCorrectOpt && <span className="bk-tag bk-tag-red">Your Answer</span>}
+                        </div>
+                        {opt.image && <img src={opt.image} alt="" className="bk-opt-image" />}
                       </div>
                     );
                   })}
@@ -151,7 +165,9 @@ export default function TestResult() {
         .status-correct { color: var(--color-success); }
         .status-wrong { color: var(--color-danger); }
 
-        .bk-qtext { font-weight: 600; margin-bottom: 0.875rem; font-size: 0.9375rem; }
+        .bk-qtext { font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9375rem; }
+        .bk-qimage { max-width: 100%; max-height: 200px; border-radius: var(--radius-md); margin-bottom: 1rem; }
+        .bk-opt-image { max-width: 150px; max-height: 100px; border-radius: var(--radius-sm); margin: 0.25rem 0 0.5rem 34px; }
 
         .bk-options { display: flex; flex-direction: column; gap: 0.5rem; }
         .bk-opt {
