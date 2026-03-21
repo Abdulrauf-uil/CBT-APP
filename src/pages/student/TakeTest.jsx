@@ -8,27 +8,47 @@ export default function TakeTest() {
   const { testId } = useParams();
   const navigate = useNavigate();
   const student = getStudentSession();
-  const test = getTestById(testId);
-  const results = getResultsByStudent(student?.id ?? '');
+  const [test, setTest] = useState(null);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(test ? test.duration * 60 : 0);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = useCallback(() => {
-    if (submitted) return;
+  useEffect(() => {
+    const fetchData = async () => {
+      const [t, r] = await Promise.all([
+        getTestById(testId),
+        getResultsByStudent(student?.id ?? '')
+      ]);
+      setTest(t);
+      setResults(r);
+      if (t) setTimeLeft(t.duration * 60);
+      setLoading(false);
+    };
+    fetchData();
+  }, [testId, student?.id]);
+
+  const handleSubmit = useCallback(async () => {
+    if (submitted || !test) return;
     setSubmitted(true);
-    const result = saveResult({
-      testId: test.id,
-      testTitle: test.title,
-      studentId: student.id,
-      studentName: student.name,
-      answers,
-      questions: test.questions,
-      totalQuestions: test.questions.length,
-    });
-    navigate(`/student/result/${result.id}`);
+    try {
+      const result = await saveResult({
+        testId: test.id,
+        testTitle: test.title,
+        studentId: student.id,
+        studentName: student.name,
+        answers,
+        questions: test.questions,
+        totalQuestions: test.questions.length,
+      });
+      navigate(`/student/result/${result.id}`);
+    } catch (err) {
+      console.error(err);
+      setSubmitted(false);
+    }
   }, [submitted, test, student, answers, navigate]);
 
   // Countdown timer

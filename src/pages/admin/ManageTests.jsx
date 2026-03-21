@@ -5,21 +5,32 @@ import Navbar from '../../components/layout/Navbar';
 
 export default function ManageTests() {
   const navigate = useNavigate();
-  const [tests, setTests] = useState(getTests);
-  const groups = getGroups();
+  const [tests, setTests] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = () => setTests(getTests());
+  const refresh = async () => {
+    setLoading(true);
+    const [t, g] = await Promise.all([getTests(), getGroups()]);
+    setTests(t);
+    setGroups(g);
+    setLoading(false);
+  };
 
-  const handleDelete = (id) => {
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const handleDelete = async (id) => {
     if (confirm('Delete this test? All student results for it will be unaffected but the test will no longer be available.')) {
-      removeTest(id);
+      await removeTest(id);
       refresh();
     }
   };
 
-  const handleToggleStatus = (test) => {
+  const handleToggleStatus = async (test) => {
     const newStatus = test.isOpen === false ? true : false;
-    updateTest(test.id, { isOpen: newStatus });
+    await updateTest(test.id, { isOpen: newStatus });
     refresh();
   };
 

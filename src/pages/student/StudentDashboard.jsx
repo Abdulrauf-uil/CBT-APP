@@ -5,11 +5,24 @@ import Navbar from '../../components/layout/Navbar';
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const student = getStudentSession();
-  const allTests = getTests();
-  const results = getResultsByStudent(student?.id ?? '');
+  const [tests, setTests] = useState([]);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter tests: either assigned to All Students (no groupId) or matches student's groupId
-  const tests = allTests.filter(t => !t.groupId || t.groupId === student?.groupId);
+  useEffect(() => {
+    const fetchData = async () => {
+      const [allTests, allResults] = await Promise.all([
+        getTests(),
+        getResultsByStudent(student?.id ?? '')
+      ]);
+      // Filter tests: either assigned to All Students (no groupId) or matches student's groupId
+      const filtered = allTests.filter(t => !t.groupId || t.groupId === student?.groupId);
+      setTests(filtered);
+      setResults(allResults);
+      setLoading(false);
+    };
+    fetchData();
+  }, [student?.id, student?.groupId]);
 
   const getAttempts = (testId) => results.filter((r) => r.testId === testId).length;
 

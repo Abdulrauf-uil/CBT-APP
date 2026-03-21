@@ -30,28 +30,31 @@ export default function TestEditor() {
   const [groups, setGroups] = useState([]);
   
   useEffect(() => {
-    setGroups(getGroups());
-    if (testId) {
-      const test = getTestById(testId);
-      if (test) {
-        setTitle(test.title);
-        setDuration(test.duration);
-        setAttempts(test.attempts ?? 1);
-        setGroupId(test.groupId || '');
-        
-        // Normalize questions for backward compatibility
-        const normalizedQs = test.questions.map(q => ({
-          ...q,
-          image: q.image || null,
-          options: q.options.map(opt => 
-            typeof opt === 'string' ? { text: opt, image: null } : opt
-          )
-        }));
-        setQuestions(normalizedQs);
-      } else {
-        navigate('/admin/tests');
+    const init = async () => {
+      setGroups(await getGroups());
+      if (testId) {
+        const test = await getTestById(testId);
+        if (test) {
+          setTitle(test.title);
+          setDuration(test.duration);
+          setAttempts(test.attempts ?? 1);
+          setGroupId(test.groupId || '');
+          
+          // Normalize questions for backward compatibility
+          const normalizedQs = test.questions.map(q => ({
+            ...q,
+            image: q.image || null,
+            options: q.options.map(opt => 
+              typeof opt === 'string' ? { text: opt, image: null } : opt
+            )
+          }));
+          setQuestions(normalizedQs);
+        } else {
+          navigate('/admin/tests');
+        }
       }
-    }
+    };
+    init();
   }, [testId, navigate]);
 
   const addQuestion = () => setQuestions([...questions, structuredClone(EMPTY_Q)]);
@@ -70,18 +73,21 @@ export default function TestEditor() {
       return { ...q, options: opts };
     }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      const payload = { title, duration: Number(duration), attempts: Number(attempts), groupId, questions };
+    const payload = { title, duration: Number(duration), attempts: Number(attempts), groupId, questions };
+    try {
       if (testId) {
-        updateTest(testId, payload);
+        await updateTest(testId, payload);
       } else {
-        addTest(payload);
+        await addTest(payload);
       }
       navigate('/admin/tests');
-    }, 300);
+    } catch (err) {
+      console.error(err);
+      setSaving(false);
+    }
   };
 
   return (

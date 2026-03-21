@@ -8,8 +8,20 @@ export default function TestResult() {
   const { resultId } = useParams();
   const navigate = useNavigate();
   const student = getStudentSession();
-  const results = getResults();
-  const result = results.find((r) => r.id === resultId);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      const results = await getResults();
+      const r = results.find((res) => res.id === resultId);
+      setResult(r);
+      setLoading(false);
+    };
+    fetchResult();
+  }, [resultId]);
+
+  if (loading) return <div className="result-page"><Navbar role="student" userName={student?.name} /><main className="container">Loading...</main></div>;
 
   if (!result) {
     return (

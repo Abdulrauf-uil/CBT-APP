@@ -9,20 +9,24 @@ export default function StudentLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      const student = validateStudent(form.email, form.password);
+    try {
+      const student = await validateStudent(form.email, form.password);
       if (student) {
         setStudentSession(student);
         navigate('/student/dashboard');
       } else {
         setError('Invalid credentials or you are not registered. Please contact your admin.');
       }
+    } catch (err) {
+      console.error(err);
+      setError('Error connecting to database.');
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (

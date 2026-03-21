@@ -6,8 +6,20 @@ import MathRenderer from '../../components/common/MathRenderer';
 export default function AdminResultDetail() {
   const { resultId } = useParams();
   const navigate = useNavigate();
-  const results = getResults();
-  const result = results.find((r) => r.id === resultId);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchResult = async () => {
+      const results = await getResults();
+      const r = results.find((res) => res.id === resultId);
+      setResult(r);
+      setLoading(false);
+    };
+    fetchResult();
+  }, [resultId]);
+
+  if (loading) return <div className="manage-page"><Navbar role="admin" userName="Admin" /><main className="container">Loading...</main></div>;
 
   if (!result) {
     return (

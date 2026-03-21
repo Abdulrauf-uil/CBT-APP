@@ -5,8 +5,19 @@ import Navbar from '../../components/layout/Navbar';
 export default function TestSubmissions() {
   const navigate = useNavigate();
   const { testId } = useParams();
-  const results = getResultsByTest(testId);
-  const test = getTestById(testId);
+  const [results, setResults] = useState([]);
+  const [test, setTest] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [r, t] = await Promise.all([getResultsByTest(testId), getTestById(testId)]);
+      setResults(r);
+      setTest(t);
+      setLoading(false);
+    };
+    fetchData();
+  }, [testId]);
 
   // Sort by newest first
   const sortedResults = [...results].sort((a, b) => b.submittedAt - a.submittedAt);

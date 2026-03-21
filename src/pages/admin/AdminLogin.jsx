@@ -9,19 +9,24 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      if (validateAdmin(form.username, form.password)) {
+    try {
+      const isValid = await validateAdmin(form.username, form.password);
+      if (isValid) {
         setAdminSession();
         navigate('/admin/dashboard');
       } else {
         setError('Invalid username or password.');
       }
+    } catch (err) {
+      console.error(err);
+      setError('Error connecting to database.');
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (

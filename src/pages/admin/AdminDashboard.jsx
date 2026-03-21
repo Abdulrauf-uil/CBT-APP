@@ -4,13 +4,21 @@ import Navbar from '../../components/layout/Navbar';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const students = getStudents();
-  const tests = getTests();
-  const results = getResults();
+  const [statsData, setStatsData] = useState({ students: 0, tests: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [s, t] = await Promise.all([getStudents(), getTests()]);
+      setStatsData({ students: s.length, tests: t.length });
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   const stats = [
-    { label: 'Students', value: students.length, icon: '👥', color: '#4F46E5' },
-    { label: 'Tests', value: tests.length, icon: '📝', color: '#0ea5e9' },
+    { label: 'Students', value: statsData.students, icon: '👥', color: '#4F46E5' },
+    { label: 'Tests', value: statsData.tests, icon: '📝', color: '#0ea5e9' },
   ];
 
   const actions = [
@@ -44,7 +52,22 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <h2 className="section-title">Quick Actions</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 className="section-title" style={{ margin: 0 }}>Quick Actions</h2>
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={async () => {
+              if (confirm('Migrate all local data to Firestore? This will merge your current device data with the cloud database.')) {
+                const { migrateToCloud } = await import('../../utils/storage');
+                await migrateToCloud();
+                alert('Migration complete!');
+                window.location.reload();
+              }
+            }}
+          >
+            ☁️ Migrate Local Data to Cloud
+          </button>
+        </div>
         <div className="actions-grid">
           {actions.map((action) => (
             <div key={action.label} className="action-card card" onClick={() => navigate(action.path)}>

@@ -5,8 +5,9 @@ import Navbar from '../../components/layout/Navbar';
 const EMPTY_FORM = { name: '', email: '', password: '', groupId: '' };
 
 export default function ManageStudents() {
-  const [students, setStudents] = useState(getStudents);
-  const [groups, setGroups] = useState(getGroups);
+  const [students, setStudents] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -15,21 +16,28 @@ export default function ManageStudents() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
-  const refresh = () => {
-    setStudents(getStudents());
-    setGroups(getGroups());
+  const refresh = async () => {
+    setLoading(true);
+    const [s, g] = await Promise.all([getStudents(), getGroups()]);
+    setStudents(s);
+    setGroups(g);
+    setLoading(false);
   };
 
-  const handleCreateGroup = () => {
-    if (!newGroupName.trim()) return;
-    const g = addGroup(newGroupName.trim());
+  useEffect(() => {
     refresh();
+  }, []);
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim()) return;
+    const g = await addGroup(newGroupName.trim());
+    await refresh();
     setForm({ ...form, groupId: g.id });
     setNewGroupName('');
     setShowNewGroup(false);
   };
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
     setError('');
     if (students.find((s) => s.email === form.email)) {
@@ -37,16 +45,16 @@ export default function ManageStudents() {
       return;
     }
     // groupId is optional.
-    addStudent(form);
-    refresh();
+    await addStudent(form);
+    await refresh();
     setForm(EMPTY_FORM);
     setShowForm(false);
   };
 
-  const handleRemove = (id) => {
+  const handleRemove = async (id) => {
     if (confirm('Remove this student? They will no longer be able to log in.')) {
-      removeStudent(id);
-      refresh();
+      await removeStudent(id);
+      await refresh();
     }
   };
 

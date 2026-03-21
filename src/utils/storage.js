@@ -1,31 +1,29 @@
 // ============================================================
-//  CBT App – localStorage Utility
+//  CBT App – Firebase Firestore Utility
 // ============================================================
+import { db } from './firebase';
+import { 
+  collection, 
+  getDocs, 
+  getDoc, 
+  doc, 
+  addDoc, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where,
+  orderBy
+} from 'firebase/firestore';
 
 const KEYS = {
-  ADMIN: 'cbt_admin',
-  STUDENTS: 'cbt_students',
-  TESTS: 'cbt_tests',
-  RESULTS: 'cbt_results',
-  GROUPS: 'cbt_groups',
+  ADMIN: 'admin_settings',
+  STUDENTS: 'students',
+  TESTS: 'tests',
+  RESULTS: 'results',
+  GROUPS: 'groups',
   STUDENT_SESSION: 'cbt_student_session',
   ADMIN_SESSION: 'cbt_admin_session',
-};
-
-// ──────────────────────────────────────────────────────────────
-//  Helpers
-// ──────────────────────────────────────────────────────────────
-const get = (key) => {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-
-const set = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
 };
 
 // ──────────────────────────────────────────────────────────────
@@ -33,104 +31,186 @@ const set = (key, value) => {
 // ──────────────────────────────────────────────────────────────
 const DEFAULT_ADMIN = { username: 'admin', password: 'admin911' };
 
-export const getAdmin = () => get(KEYS.ADMIN) ?? DEFAULT_ADMIN;
+export const getAdmin = async () => {
+  try {
+    const adminDoc = await getDoc(doc(db, 'settings', KEYS.ADMIN));
+    return adminDoc.exists() ? adminDoc.data() : DEFAULT_ADMIN;
+  } catch (error) {
+    console.error("Error fetching admin:", error);
+    return DEFAULT_ADMIN;
+  }
+};
 
-export const updateAdmin = (updated) => set(KEYS.ADMIN, updated);
+export const updateAdmin = async (updated) => {
+  await setDoc(doc(db, 'settings', KEYS.ADMIN), updated);
+};
 
-export const validateAdmin = (username, password) => {
-  const admin = getAdmin();
+export const validateAdmin = async (username, password) => {
+  const admin = await getAdmin();
   return admin.username === username && admin.password === password;
 };
 
-// Admin session
-export const setAdminSession = () => set(KEYS.ADMIN_SESSION, { loggedIn: true, at: Date.now() });
+// Admin session (Keep in localStorage for session persistence)
+export const setAdminSession = () => localStorage.setItem(KEYS.ADMIN_SESSION, JSON.stringify({ loggedIn: true, at: Date.now() }));
 export const clearAdminSession = () => localStorage.removeItem(KEYS.ADMIN_SESSION);
-export const isAdminLoggedIn = () => !!get(KEYS.ADMIN_SESSION)?.loggedIn;
+export const isAdminLoggedIn = () => {
+  const session = localStorage.getItem(KEYS.ADMIN_SESSION);
+  return session ? JSON.parse(session).loggedIn : false;
+};
 
 // ──────────────────────────────────────────────────────────────
 //  Groups
 // ──────────────────────────────────────────────────────────────
-// A group is just { id, name, createdAt }
-export const getGroups = () => get(KEYS.GROUPS) ?? [];
-
-export const addGroup = (name) => {
-  const groups = getGroups();
-  const newGroup = { id: crypto.randomUUID(), name, createdAt: Date.now() };
-  set(KEYS.GROUPS, [...groups, newGroup]);
-  return newGroup;
+export const getGroups = async () => {
+  const snap = await getDocs(query(collection(db, KEYS.GROUPS), orderBy('createdAt', 'desc')));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
-export const deleteGroup = (id) => {
-  set(KEYS.GROUPS, getGroups().filter((g) => g.id !== id));
-  // Optional: Also remove this groupId from any students that have it
+export const addGroup = async (name) => {
+  const docRef = await addDoc(collection(db, KEYS.GROUPS), {
+    name,
+    createdAt: Date.now()
+  });
+  return { id: docRef.id, name };
+};
+
+export const deleteGroup = async (id) => {
+  await deleteDoc(doc(db, KEYS.GROUPS, id));
 };
 
 // ──────────────────────────────────────────────────────────────
 //  Students
 // ──────────────────────────────────────────────────────────────
-export const getStudents = () => get(KEYS.STUDENTS) ?? [];
-
-export const addStudent = (student) => {
-  const students = getStudents();
-  // student should now optionally include `groupId`
-  const newStudent = { ...student, id: crypto.randomUUID(), createdAt: Date.now() };
-  set(KEYS.STUDENTS, [...students, newStudent]);
-  return newStudent;
+export const getStudents = async () => {
+  const snap = await getDocs(query(collection(db, KEYS.STUDENTS), orderBy('createdAt', 'desc')));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
-export const removeStudent = (id) => {
-  set(KEYS.STUDENTS, getStudents().filter((s) => s.id !== id));
+export const addStudent = async (student) => {
+  const docRef = await addDoc(collection(db, KEYS.STUDENTS), {
+    ...student,
+    createdAt: Date.now()
+  });
+  return { ...student, id: docRef.id };
 };
 
-export const validateStudent = (email, password) => {
-  const students = getStudents();
-  return students.find((s) => s.email === email && s.password === password) ?? null;
+export const removeStudent = async (id) => {
+  await deleteDoc(doc(db, KEYS.STUDENTS, id));
 };
 
-// Student session
-export const setStudentSession = (student) => set(KEYS.STUDENT_SESSION, student);
+export const validateStudent = async (email, password) => {
+  const q = query(collection(db, KEYS.STUDENTS), where("email", "==", email), where("password", "==", password));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...snap.docs[0].data() };
+};
+
+// Student session (Keep in localStorage)
+export const setStudentSession = (student) => localStorage.setItem(KEYS.STUDENT_SESSION, JSON.stringify(student));
 export const clearStudentSession = () => localStorage.removeItem(KEYS.STUDENT_SESSION);
-export const getStudentSession = () => get(KEYS.STUDENT_SESSION);
+export const getStudentSession = () => {
+  const s = localStorage.getItem(KEYS.STUDENT_SESSION);
+  return s ? JSON.parse(s) : null;
+};
 
 // ──────────────────────────────────────────────────────────────
 //  Tests
 // ──────────────────────────────────────────────────────────────
-export const getTests = () => get(KEYS.TESTS) ?? [];
-
-export const getTestById = (id) => getTests().find((t) => t.id === id) ?? null;
-
-export const addTest = (test) => {
-  const tests = getTests();
-  // test should now include `groupId` (or 'all')
-  const newTest = { ...test, id: crypto.randomUUID(), createdAt: Date.now(), isOpen: true };
-  set(KEYS.TESTS, [...tests, newTest]);
-  return newTest;
+export const getTests = async () => {
+  const snap = await getDocs(query(collection(db, KEYS.TESTS), orderBy('createdAt', 'desc')));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
-export const updateTest = (id, updatedFields) => {
-  const tests = getTests();
-  const updatedTests = tests.map(t => t.id === id ? { ...t, ...updatedFields } : t);
-  set(KEYS.TESTS, updatedTests);
+export const getTestById = async (id) => {
+  const d = await getDoc(doc(db, KEYS.TESTS, id));
+  return d.exists() ? { id: d.id, ...d.data() } : null;
 };
 
-export const removeTest = (id) => {
-  set(KEYS.TESTS, getTests().filter((t) => t.id !== id));
+export const addTest = async (test) => {
+  const docRef = await addDoc(collection(db, KEYS.TESTS), {
+    ...test,
+    createdAt: Date.now(),
+    isOpen: true
+  });
+  return { ...test, id: docRef.id };
+};
+
+export const updateTest = async (id, updatedFields) => {
+  await updateDoc(doc(db, KEYS.TESTS, id), updatedFields);
+};
+
+export const removeTest = async (id) => {
+  await deleteDoc(doc(db, KEYS.TESTS, id));
 };
 
 // ──────────────────────────────────────────────────────────────
 //  Results
 // ──────────────────────────────────────────────────────────────
-export const getResults = () => get(KEYS.RESULTS) ?? [];
-
-export const saveResult = (result) => {
-  const results = getResults();
-  const newResult = { ...result, id: crypto.randomUUID(), submittedAt: Date.now() };
-  set(KEYS.RESULTS, [...results, newResult]);
-  return newResult;
+export const getResults = async () => {
+  const snap = await getDocs(query(collection(db, KEYS.RESULTS), orderBy('submittedAt', 'desc')));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
-export const getResultsByStudent = (studentId) =>
-  getResults().filter((r) => r.studentId === studentId);
+export const saveResult = async (result) => {
+  const docRef = await addDoc(collection(db, KEYS.RESULTS), {
+    ...result,
+    submittedAt: Date.now()
+  });
+  return { ...result, id: docRef.id };
+};
 
-export const getResultsByTest = (testId) =>
-  getResults().filter((r) => r.testId === testId);
+export const getResultsByStudent = async (studentId) => {
+  const q = query(collection(db, KEYS.RESULTS), where("studentId", "==", studentId));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+export const getResultsByTest = async (testId) => {
+  const q = query(collection(db, KEYS.RESULTS), where("testId", "==", testId));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+// ──────────────────────────────────────────────────────────────
+//  Migration Utility (One-time use)
+// ──────────────────────────────────────────────────────────────
+export const migrateToCloud = async () => {
+  const localKeys = {
+    TESTS: 'cbt_tests',
+    STUDENTS: 'cbt_students',
+    RESULTS: 'cbt_results',
+    GROUPS: 'cbt_groups',
+    ADMIN: 'cbt_admin'
+  };
+
+  const getLocal = (key) => {
+    const r = localStorage.getItem(key);
+    return r ? JSON.parse(r) : [];
+  };
+
+  // Migrate Groups
+  const localGroups = getLocal(localKeys.GROUPS);
+  for (const g of localGroups) {
+    await setDoc(doc(db, KEYS.GROUPS, g.id), { name: g.name, createdAt: g.createdAt || Date.now() });
+  }
+
+  // Migrate Students
+  const localStudents = getLocal(localKeys.STUDENTS);
+  for (const s of localStudents) {
+    await setDoc(doc(db, KEYS.STUDENTS, s.id), { ...s, createdAt: s.createdAt || Date.now() });
+  }
+
+  // Migrate Tests
+  const localTests = getLocal(localKeys.TESTS);
+  for (const t of localTests) {
+    await setDoc(doc(db, KEYS.TESTS, t.id), { ...t, createdAt: t.createdAt || Date.now(), isOpen: t.isOpen !== false });
+  }
+
+  // Migrate Results
+  const localResults = getLocal(localKeys.RESULTS);
+  for (const r of localResults) {
+    await setDoc(doc(db, KEYS.RESULTS, r.id), { ...r, submittedAt: r.submittedAt || Date.now() });
+  }
+
+  console.log("Migration complete!");
+};
