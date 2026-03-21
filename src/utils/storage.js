@@ -102,7 +102,7 @@ export const getTestById = (id) => getTests().find((t) => t.id === id) ?? null;
 export const addTest = (test) => {
   const tests = getTests();
   // test should now include `groupId` (or 'all')
-  const newTest = { ...test, id: crypto.randomUUID(), createdAt: Date.now() };
+  const newTest = { ...test, id: crypto.randomUUID(), createdAt: Date.now(), isOpen: true };
   set(KEYS.TESTS, [...tests, newTest]);
   return newTest;
 };

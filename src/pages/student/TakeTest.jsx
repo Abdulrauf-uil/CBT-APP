@@ -71,6 +71,26 @@ export default function TakeTest() {
     );
   }
 
+  // Check if test is closed
+  if (test.isOpen === false && !submitted) {
+    return (
+      <div className="take-test-page">
+        <Navbar role="student" userName={student?.name} />
+        <main className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+          <div className="card shadow-lg" style={{ maxWidth: '500px', margin: '0 auto', padding: '3rem' }}>
+            <span style={{ fontSize: '4rem', display: 'block', marginBottom: '1.5rem' }}>🔒</span>
+            <h2 style={{ color: 'var(--color-danger)', marginBottom: '1rem' }}>Test Closed</h2>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+              This test is currently closed. Please contact your administration for access to this test.
+            </p>
+            <button className="btn btn-primary" style={{ marginTop: '2rem', width: '100%' }}
+              onClick={() => navigate('/student/dashboard')}>Back to Dashboard</button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // Normalize current question for backward compatibility
   const rawQ = test.questions[current];
   const q = {

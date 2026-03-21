@@ -40,18 +40,21 @@ export default function StudentDashboard() {
                       <span className="badge badge-neutral">{t.questions?.length ?? 0} Qs</span>
                       {attempts > 0 && <span className="badge badge-green">Attempted ×{attempts}</span>}
                       {t.attempts > 0 && <span className="badge badge-neutral">Limit: {t.attempts}</span>}
+                      {t.isOpen === false && <span className="badge badge-danger">Closed</span>}
                     </div>
                   </div>
                   <h3 className="test-title">{t.title}</h3>
 
                   <button
-                    className={`btn start-btn ${attempts >= t.attempts && t.attempts > 0 ? 'btn-secondary' : 'btn-primary'}`}
-                    disabled={attempts >= t.attempts && t.attempts > 0}
+                    className={`btn start-btn ${t.isOpen === false ? 'btn-danger' : (attempts >= t.attempts && t.attempts > 0 ? 'btn-secondary' : 'btn-primary')}`}
+                    disabled={t.isOpen === false || (attempts >= t.attempts && t.attempts > 0)}
                     onClick={() => navigate(`/student/test/${t.id}`)}
                   >
-                    {t.attempts > 0 && attempts >= t.attempts 
-                      ? 'Limit Reached' 
-                      : (attempts > 0 ? 'Retake Test' : 'Start Test') + ' →'}
+                    {t.isOpen === false 
+                      ? 'Test Closed' 
+                      : (t.attempts > 0 && attempts >= t.attempts 
+                          ? 'Limit Reached' 
+                          : (attempts > 0 ? 'Retake Test' : 'Start Test') + ' →')}
                   </button>
                 </div>
               );
@@ -96,6 +99,7 @@ export default function StudentDashboard() {
         .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
         .badge-neutral { background: var(--bg-surface-hover); color: var(--text-secondary); }
         .badge-green { background: rgba(34,197,94,0.1); color: #16a34a; }
+        .badge-danger { background: var(--color-danger-light); color: var(--color-danger); }
 
         .test-title { font-size: 1.0625rem; font-weight: 700; flex: 1; }
         .start-btn { width: 100%; font-size: 0.9375rem; padding: 0.625rem; }

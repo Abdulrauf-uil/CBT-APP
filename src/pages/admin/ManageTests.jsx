@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTests, removeTest, getGroups, getResultsByTest } from '../../utils/storage';
+import { getTests, removeTest, getGroups, getResultsByTest, updateTest } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function ManageTests() {
@@ -15,6 +15,12 @@ export default function ManageTests() {
       removeTest(id);
       refresh();
     }
+  };
+
+  const handleToggleStatus = (test) => {
+    const newStatus = test.isOpen === false ? true : false;
+    updateTest(test.id, { isOpen: newStatus });
+    refresh();
   };
 
   return (
@@ -56,6 +62,21 @@ export default function ManageTests() {
                     {(t.questions?.length ?? 0)} question{((t.questions?.length ?? 0) !== 1 ? 's' : '')}
                     <span className="dot-divider">•</span> Assigned: <span className="group-badge">{groupLabel}</span>
                   </p>
+                  
+                  <div className="status-toggle-row">
+                    <span className={`status-label ${t.isOpen !== false ? 'status-open' : 'status-closed'}`}>
+                      {t.isOpen !== false ? '● Open' : '○ Closed'}
+                    </span>
+                    <label className="switch">
+                      <input 
+                        type="checkbox" 
+                        checked={t.isOpen !== false} 
+                        onChange={() => handleToggleStatus(t)}
+                      />
+                      <span className="slider round"></span>
+                    </label>
+                  </div>
+
                   <p className="test-date">Created: {new Date(t.createdAt).toLocaleDateString()}</p>
                   
                   <div className="test-stats-row">
@@ -126,6 +147,50 @@ export default function ManageTests() {
           color: var(--text-muted);
         }
         .empty-state span { font-size: 3rem; }
+
+        .status-toggle-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 0.5rem;
+          padding: 0.5rem 0.75rem;
+          background: var(--bg-surface-hover);
+          border-radius: var(--radius-md);
+        }
+        .status-label { font-size: 0.8125rem; font-weight: 700; }
+        .status-open { color: var(--color-success); }
+        .status-closed { color: var(--color-danger); }
+
+        /* Switch styles */
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 34px;
+          height: 20px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-color: #ccc;
+          transition: .4s;
+          border-radius: 20px;
+        }
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 14px;
+          width: 14px;
+          left: 3px;
+          bottom: 3px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--color-primary); }
+        input:focus + .slider { box-shadow: 0 0 1px var(--color-primary); }
+        input:checked + .slider:before { transform: translateX(14px); }
 
         .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }
       `}</style>
