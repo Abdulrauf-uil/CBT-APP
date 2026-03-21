@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTests, removeTest, getGroups, getResultsByTest, updateTest } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';

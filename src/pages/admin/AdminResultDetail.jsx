@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getResults } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
