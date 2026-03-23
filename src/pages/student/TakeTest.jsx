@@ -78,6 +78,37 @@ export default function TakeTest() {
     return () => clearTimeout(id);
   }, [timeLeft, submitted, test, handleSubmit]);
 
+  // Anti-cheat measures
+  useEffect(() => {
+    if (!test || submitted) return;
+
+    const handleKeydown = (e) => {
+      // Disable PrintScreen
+      if (e.key === 'PrintScreen') {
+        alert('Screenshots are disabled during the test.');
+      }
+      // Disable Ctrl+C, Ctrl+V, Ctrl+X
+      if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+        e.preventDefault();
+      }
+    };
+
+    const handleCopy = (e) => e.preventDefault();
+    const handleContextMenu = (e) => e.preventDefault();
+
+    window.addEventListener('keydown', handleKeydown);
+    window.addEventListener('copy', handleCopy);
+    window.addEventListener('cut', handleCopy);
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('copy', handleCopy);
+      window.removeEventListener('cut', handleCopy);
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [test, submitted]);
+
   if (!test) {
     return (
       <div className="take-test-page">
@@ -145,7 +176,7 @@ export default function TakeTest() {
   const timeWarning = timeLeft < 60;
 
   return (
-    <div className="take-test-page">
+    <div className="take-test-page no-select" onCopy={(e) => e.preventDefault()} onCut={(e) => e.preventDefault()}>
       <Navbar role="student" userName={student?.name} />
 
       {/* Sticky Timer & Progress */}
@@ -225,6 +256,7 @@ export default function TakeTest() {
 
       <style>{`
         .take-test-page { min-height: 100vh; }
+        .no-select { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
 
         .test-topbar {
           display: flex; align-items: center; justify-content: space-between;

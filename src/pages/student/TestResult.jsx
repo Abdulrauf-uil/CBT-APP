@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getResultById } from '../../utils/storage';
+import { getResultById, getResultsByTest } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 import { getStudentSession } from '../../utils/storage';
 import MathRenderer from '../../components/common/MathRenderer';
@@ -12,14 +12,40 @@ export default function TestResult() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [rank, setRank] = useState({ pos: 0, total: 0 });
+
   useEffect(() => {
     const fetchResult = async () => {
       const r = await getResultById(resultId);
       setResult(r);
+      if (r) {
+        const allResults = await getResultsByTest(r.testId);
+        
+        // Calculate scores for all and sort
+        const scouts = allResults.map(res => {
+          let s = 0;
+          res.questions.forEach((q, i) => {
+            if (res.answers[i] === q.correct) s++;
+          });
+          return { id: res.id, score: s, pct: Math.round((s / res.totalQuestions) * 100) };
+        });
+
+        // Sort by pct desc, then by score desc
+        scouts.sort((a, b) => b.pct - a.pct || b.score - a.score);
+        
+        const myIndex = scouts.findIndex(s => s.id === resultId);
+        setRank({ pos: myIndex + 1, total: scouts.length });
+      }
       setLoading(false);
     };
     fetchResult();
   }, [resultId]);
+
+  const getOrdinal = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
 
   if (loading) return <div className="result-page"><Navbar role="student" userName={student?.name} /><main className="container">Loading...</main></div>;
 
@@ -64,6 +90,11 @@ export default function TestResult() {
           <div className="grade-badge" style={{ background: gradeInfo.bg, color: gradeInfo.color }}>
             {gradeInfo.label}
           </div>
+          {rank.total > 0 && (
+            <div className="rank-info" style={{ marginTop: '0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              Position: <span style={{ color: 'var(--color-primary)' }}>{getOrdinal(rank.pos)}</span> out of {rank.total}
+            </div>
+          )}
           <p className="score-sub">
             Submitted on {new Date(result.submittedAt).toLocaleString()}
           </p>

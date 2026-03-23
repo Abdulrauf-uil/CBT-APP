@@ -96,6 +96,11 @@ export const addStudent = async (student) => {
 
 export const removeStudent = async (id) => {
   await deleteDoc(doc(db, KEYS.STUDENTS, id));
+  // Also delete all results for this student
+  const q = query(collection(db, KEYS.RESULTS), where("studentId", "==", id));
+  const snap = await getDocs(q);
+  const deletePromises = snap.docs.map(d => deleteDoc(doc(db, KEYS.RESULTS, d.id)));
+  await Promise.all(deletePromises);
 };
 
 export const validateStudent = async (email, password) => {
