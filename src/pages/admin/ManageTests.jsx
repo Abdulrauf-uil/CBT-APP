@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTests, removeTest, getGroups, getResultsByTest, updateTest } from '../../utils/storage';
+import { getTests, removeTest, getGroups, getResults, updateTest } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function ManageTests() {
@@ -9,11 +9,14 @@ export default function ManageTests() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [results, setResults] = useState([]);
+
   const refresh = async () => {
     setLoading(true);
-    const [t, g] = await Promise.all([getTests(), getGroups()]);
+    const [t, g, r] = await Promise.all([getTests(), getGroups(), getResults()]);
     setTests(t);
     setGroups(g);
+    setResults(r);
     setLoading(false);
   };
 
@@ -60,7 +63,7 @@ export default function ManageTests() {
           <div className="tests-grid">
             {tests.map((t) => {
               const groupLabel = t.groupId ? groups.find(g => g.id === t.groupId)?.name || 'Unknown Group' : 'All Students';
-              const resultsCount = getResultsByTest(t.id).length;
+              const resultsCount = results.filter(r => r.testId === t.id).length;
 
               return (
                 <div key={t.id} className="test-card card">

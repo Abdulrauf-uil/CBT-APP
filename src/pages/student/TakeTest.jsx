@@ -25,7 +25,21 @@ export default function TakeTest() {
       ]);
       setTest(t);
       setResults(r);
-      if (t) setTimeLeft(t.duration * 60);
+      
+      if (t) {
+        const timerKey = `cbt_timer_${student?.id}_${testId}`;
+        const savedEndTime = localStorage.getItem(timerKey);
+        const now = Math.floor(Date.now() / 1000);
+        
+        if (savedEndTime) {
+          const remaining = parseInt(savedEndTime, 10) - now;
+          setTimeLeft(remaining > 0 ? remaining : 0);
+        } else {
+          const durationSecs = t.duration * 60;
+          localStorage.setItem(timerKey, (now + durationSecs).toString());
+          setTimeLeft(durationSecs);
+        }
+      }
       setLoading(false);
     };
     fetchData();
@@ -44,12 +58,14 @@ export default function TakeTest() {
         questions: test.questions,
         totalQuestions: test.questions.length,
       });
+      // Clear timer on successful submission
+      localStorage.removeItem(`cbt_timer_${student?.id}_${testId}`);
       navigate(`/student/result/${result.id}`);
     } catch (err) {
       console.error(err);
       setSubmitted(false);
     }
-  }, [submitted, test, student, answers, navigate]);
+  }, [submitted, test, student, answers, navigate, testId]);
 
   // Countdown timer
   useEffect(() => {

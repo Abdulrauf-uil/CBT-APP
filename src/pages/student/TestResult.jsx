@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getResults } from '../../utils/storage';
+import { getResultById } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 import { getStudentSession } from '../../utils/storage';
 import MathRenderer from '../../components/common/MathRenderer';
@@ -14,8 +14,7 @@ export default function TestResult() {
 
   useEffect(() => {
     const fetchResult = async () => {
-      const results = await getResults();
-      const r = results.find((res) => res.id === resultId);
+      const r = await getResultById(resultId);
       setResult(r);
       setLoading(false);
     };

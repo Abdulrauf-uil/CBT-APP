@@ -26,6 +26,11 @@ export default function StudentDashboard() {
   }, [student?.id, student?.groupId]);
 
   const getAttempts = (testId) => results.filter((r) => r.testId === testId).length;
+  const getLatestResultId = (testId) => {
+    const testResults = results.filter((r) => r.testId === testId);
+    if (testResults.length === 0) return null;
+    return testResults.sort((a, b) => b.submittedAt - a.submittedAt)[0].id;
+  };
 
   return (
     <div className="student-dash-page">
@@ -59,17 +64,27 @@ export default function StudentDashboard() {
                   </div>
                   <h3 className="test-title">{t.title}</h3>
 
-                  <button
-                    className={`btn start-btn ${t.isOpen === false ? 'btn-danger' : (attempts >= t.attempts && t.attempts > 0 ? 'btn-secondary' : 'btn-primary')}`}
-                    disabled={t.isOpen === false || (attempts >= t.attempts && t.attempts > 0)}
-                    onClick={() => navigate(`/student/test/${t.id}`)}
-                  >
-                    {t.isOpen === false 
-                      ? 'Test Closed' 
-                      : (t.attempts > 0 && attempts >= t.attempts 
-                          ? 'Limit Reached' 
-                          : (attempts > 0 ? 'Retake Test' : 'Start Test') + ' →')}
-                  </button>
+                  <div className="test-actions">
+                    <button
+                      className={`btn start-btn ${t.isOpen === false ? 'btn-danger' : (attempts >= t.attempts && t.attempts > 0 ? 'btn-secondary' : 'btn-primary')}`}
+                      disabled={t.isOpen === false || (attempts >= t.attempts && t.attempts > 0)}
+                      onClick={() => navigate(`/student/test/${t.id}`)}
+                    >
+                      {t.isOpen === false 
+                        ? 'Test Closed' 
+                        : (t.attempts > 0 && attempts >= t.attempts 
+                            ? 'Limit Reached' 
+                            : (attempts > 0 ? 'Retake Test' : 'Start Test') + ' →')}
+                    </button>
+                    {attempts > 0 && (
+                      <button 
+                        className="btn btn-secondary view-results-btn"
+                        onClick={() => navigate(`/student/result/${getLatestResultId(t.id)}`)}
+                      >
+                        View Results
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -116,7 +131,9 @@ export default function StudentDashboard() {
         .badge-danger { background: var(--color-danger-light); color: var(--color-danger); }
 
         .test-title { font-size: 1.0625rem; font-weight: 700; flex: 1; }
+        .test-actions { display: flex; flex-direction: column; gap: 0.5rem; }
         .start-btn { width: 100%; font-size: 0.9375rem; padding: 0.625rem; }
+        .view-results-btn { width: 100%; font-size: 0.9375rem; padding: 0.625rem; }
 
         .empty-state {
           display: flex; flex-direction: column; align-items: center; gap: 0.75rem;

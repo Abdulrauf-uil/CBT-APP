@@ -175,6 +175,11 @@ export const removeResult = async (id) => {
   await deleteDoc(doc(db, KEYS.RESULTS, id));
 };
 
+export const getResultById = async (id) => {
+  const d = await getDoc(doc(db, KEYS.RESULTS, id));
+  return d.exists() ? { id: d.id, ...d.data() } : null;
+};
+
 // ──────────────────────────────────────────────────────────────
 //  Migration Utility (One-time use)
 // ──────────────────────────────────────────────────────────────
