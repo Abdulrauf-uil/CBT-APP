@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { getResultsByTest, getTestById } from '../../utils/storage';
+import { getResultsByTest, getTestById, removeResult } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function TestSubmissions() {
@@ -19,6 +19,17 @@ export default function TestSubmissions() {
     };
     fetchData();
   }, [testId]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this submission? This will allow the student to retake the test.')) return;
+    try {
+      await removeResult(id);
+      setResults(results.filter(r => r.id !== id));
+    } catch (error) {
+      console.error("Error deleting result:", error);
+      alert("Failed to delete submission.");
+    }
+  };
 
   // Sort by newest first
   const sortedResults = [...results].sort((a, b) => b.submittedAt - a.submittedAt);
@@ -75,10 +86,16 @@ export default function TestSubmissions() {
                       <td className="text-sm">
                         {new Date(r.submittedAt).toLocaleDateString()} {new Date(r.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                         <Link to={`/admin/results/${r.id}`} className="btn btn-primary btn-sm">
                           View Details
                         </Link>
+                        <button 
+                          className="btn btn-danger btn-sm" 
+                          onClick={() => handleDelete(r.id)}
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   );

@@ -171,6 +171,10 @@ export const getResultsByTest = async (testId) => {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };
 
+export const removeResult = async (id) => {
+  await deleteDoc(doc(db, KEYS.RESULTS, id));
+};
+
 // ──────────────────────────────────────────────────────────────
 //  Migration Utility (One-time use)
 // ──────────────────────────────────────────────────────────────
