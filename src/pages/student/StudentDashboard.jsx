@@ -8,7 +8,6 @@ export default function StudentDashboard() {
   const student = getStudentSession();
   const [tests, setTests] = useState([]);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -20,7 +19,6 @@ export default function StudentDashboard() {
       const filtered = allTests.filter(t => !t.groupId || t.groupId === student?.groupId);
       setTests(filtered);
       setResults(allResults);
-      setLoading(false);
     };
     fetchData();
   }, [student?.id, student?.groupId]);

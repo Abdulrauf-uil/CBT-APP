@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStudents, getTests, getResults } from '../../utils/storage';
+import { getStudents, getTests } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [statsData, setStatsData] = useState({ students: 0, tests: 0 });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       const [s, t] = await Promise.all([getStudents(), getTests()]);
       setStatsData({ students: s.length, tests: t.length });
-      setLoading(false);
     };
     fetchData();
   }, []);

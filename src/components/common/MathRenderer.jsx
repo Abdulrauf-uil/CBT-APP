@@ -12,13 +12,13 @@ export default function MathRenderer({ text, className = "" }) {
     const html = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
       try {
         return katex.renderToString(formula, { displayMode: true, throwOnError: false });
-      } catch (e) {
+      } catch {
         return match;
       }
     }).replace(/\$([\s\S]+?)\$/g, (match, formula) => {
       try {
         return katex.renderToString(formula, { displayMode: false, throwOnError: false });
-      } catch (e) {
+      } catch {
         return match;
       }
     });

@@ -10,7 +10,6 @@ export default function TestResult() {
   const navigate = useNavigate();
   const student = getStudentSession();
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   const [rank, setRank] = useState({ pos: 0, total: 0 });
 
@@ -36,7 +35,6 @@ export default function TestResult() {
         const myIndex = scouts.findIndex(s => s.id === resultId);
         setRank({ pos: myIndex + 1, total: scouts.length });
       }
-      setLoading(false);
     };
     fetchResult();
   }, [resultId]);
@@ -47,7 +45,6 @@ export default function TestResult() {
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  if (loading) return <div className="result-page"><Navbar role="student" userName={student?.name} /><main className="container">Loading...</main></div>;
 
   if (!result) {
     return (
@@ -145,6 +142,11 @@ export default function TestResult() {
                     );
                   })}
                 </div>
+                {q.explanation && (
+                  <div className="explanation-callout">
+                    💡 <strong>Explanation: </strong>{q.explanation}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -233,6 +235,18 @@ export default function TestResult() {
         }
         .bk-tag-green { background: rgba(34,197,94,0.15); color: #16a34a; }
         .bk-tag-red { background: rgba(239,68,68,0.15); color: var(--color-danger); }
+
+        .explanation-callout {
+          margin-top: 0.75rem;
+          padding: 0.625rem 0.875rem;
+          background: rgba(234,179,8,0.08);
+          border-left: 3px solid var(--color-warning);
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+          font-size: 0.875rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+        .explanation-callout strong { color: var(--color-warning); }
 
         .result-actions { display: flex; justify-content: flex-end; gap: 0.875rem; flex-wrap: wrap; }
       `}</style>

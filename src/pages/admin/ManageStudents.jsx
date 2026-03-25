@@ -7,7 +7,6 @@ const EMPTY_FORM = { name: '', email: '', password: '', groupId: '' };
 export default function ManageStudents() {
   const [students, setStudents] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -17,14 +16,13 @@ export default function ManageStudents() {
   const [newGroupName, setNewGroupName] = useState('');
 
   const refresh = async () => {
-    setLoading(true);
     const [s, g] = await Promise.all([getStudents(), getGroups()]);
     setStudents(s);
     setGroups(g);
-    setLoading(false);
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, []);
 

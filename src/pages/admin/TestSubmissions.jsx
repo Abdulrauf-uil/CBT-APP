@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { getResultsByTest, getTestById, removeResult } from '../../utils/storage';
+import * as XLSX from 'xlsx';
 import Navbar from '../../components/layout/Navbar';
 
 export default function TestSubmissions() {
@@ -8,14 +9,12 @@ export default function TestSubmissions() {
   const { testId } = useParams();
   const [results, setResults] = useState([]);
   const [test, setTest] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       const [r, t] = await Promise.all([getResultsByTest(testId), getTestById(testId)]);
       setResults(r);
       setTest(t);
-      setLoading(false);
     };
     fetchData();
   }, [testId]);
@@ -34,6 +33,34 @@ export default function TestSubmissions() {
   // Sort by newest first
   const sortedResults = [...results].sort((a, b) => b.submittedAt - a.submittedAt);
 
+  const exportToExcel = () => {
+    if (sortedResults.length === 0) return alert('No results to export.');
+    
+    // Format data for Excel
+    const data = sortedResults.map(r => {
+      let correctCount = 0;
+      r.questions.forEach((q, i) => {
+        if (r.answers[i] === q.correct) correctCount++;
+      });
+      const pct = Math.round((correctCount / r.totalQuestions) * 100);
+      const passed = pct >= 50;
+      
+      return {
+        'Student Name': r.studentName,
+        'Score (%)': `${pct}%`,
+        'Correct Answers': correctCount,
+        'Total Questions': r.totalQuestions,
+        'Status': passed ? 'Passed' : 'Failed',
+        'Date Submitted': new Date(r.submittedAt).toLocaleString()
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Submissions");
+    XLSX.writeFile(wb, `${test?.title || 'Test'}_Results.xlsx`);
+  };
+
   return (
     <div className="manage-page">
       <Navbar role="admin" userName="Admin" />
@@ -43,9 +70,14 @@ export default function TestSubmissions() {
             <h1>{test?.title || 'Unknown Test'}</h1>
             <p>Student Submissions</p>
           </div>
-          <button className="btn btn-secondary" onClick={() => navigate('/admin/tests')}>
-            ← Back to Manage Tests
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={exportToExcel}>
+              📥 Export to Excel
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/admin/tests')}>
+              ← Back to Manage Tests
+            </button>
+          </div>
         </div>
 
         {sortedResults.length === 0 ? (

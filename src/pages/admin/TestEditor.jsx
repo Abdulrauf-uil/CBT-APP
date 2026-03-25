@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addTest, updateTest, getTestById, getGroups } from '../../utils/storage';
+import * as XLSX from 'xlsx';
 import Navbar from '../../components/layout/Navbar';
 import MathRenderer from '../../components/common/MathRenderer';
 import ImageUpload from '../../components/common/ImageUpload';
+import { useRef } from 'react';
 
 const EMPTY_Q = { 
   text: '', 
@@ -14,10 +16,12 @@ const EMPTY_Q = {
     { text: '', image: null },
     { text: '', image: null }
   ], 
-  correct: 0 
+  correct: 0,
+  explanation: ''
 };
 
 export default function TestEditor() {
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const { testId } = useParams();
   
@@ -73,6 +77,22 @@ export default function TestEditor() {
       return { ...q, options: opts };
     }));
 
+  const addOption = (qi) =>
+    setQuestions(questions.map((q, i) => {
+      if (i !== qi) return q;
+      return { ...q, options: [...q.options, { text: '', image: null }] };
+    }));
+
+  const removeOption = (qi, oi) =>
+    setQuestions(questions.map((q, i) => {
+      if (i !== qi) return q;
+      if (q.options.length <= 2) return q; // guard: min 2
+      const opts = q.options.filter((_, idx) => idx !== oi);
+      // if correct option was removed or is now out of bounds, reset to 0
+      const newCorrect = q.correct >= opts.length ? 0 : (q.correct > oi ? q.correct - 1 : q.correct);
+      return { ...q, options: opts, correct: newCorrect };
+    }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -88,6 +108,66 @@ export default function TestEditor() {
       console.error(err);
       setSaving(false);
     }
+  };
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { 'Question Text': 'What is the capital of France?', 'Option A': 'Berlin', 'Option B': 'Madrid', 'Option C': 'Paris', 'Option D': 'Rome', 'Option E': '', 'Option F': '', 'Correct Option': 'C', 'Explanation': 'Paris is the capital and largest city of France.' },
+      { 'Question Text': 'Simplify $E=mc^2$ — what does E represent?', 'Option A': 'Energy', 'Option B': 'Mass', 'Option C': 'Gravity', 'Option D': 'Time', 'Option E': 'Momentum', 'Option F': '', 'Correct Option': 'A', 'Explanation': 'E stands for Energy in Einstein\'s famous mass-energy equivalence formula.' },
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Questions");
+    XLSX.writeFile(wb, "Questions_Template.xlsx");
+  };
+
+  const importFromExcel = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        const optionKeys = ['A','B','C','D','E','F'];
+        const importedQs = data.filter(row => row['Question Text']).map(row => {
+          const correctLetter = String(row['Correct Option'] || 'A').toUpperCase().trim();
+          // Build options array from whichever columns are present
+          const opts = optionKeys
+            .map(k => ({ text: String(row[`Option ${k}`] || ''), image: null }))
+            .filter(o => o.text.trim() !== '');
+          if (opts.length < 2) opts.push({ text: '', image: null }); // ensure at least 2
+          const correctIdx = Math.max(optionKeys.indexOf(correctLetter), 0);
+          return {
+            text: String(row['Question Text'] || ''),
+            image: null,
+            options: opts,
+            correct: Math.min(correctIdx, opts.length - 1),
+            explanation: String(row['Explanation'] || '')
+          };
+        });
+
+        if (importedQs.length > 0) {
+          if (questions.length === 1 && !questions[0].text) {
+            setQuestions(importedQs);
+          } else {
+            setQuestions([...questions, ...importedQs]);
+          }
+          alert(`Success: Imported ${importedQs.length} question(s)!`);
+        } else {
+          alert('No valid questions found. Ensure column names match the template.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error parsing Excel file.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = null;
   };
 
   return (
@@ -138,7 +218,16 @@ export default function TestEditor() {
           <div className="questions-section">
             <div className="questions-header">
               <h3>Questions ({questions.length})</h3>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={addQuestion}>+ Add Question</button>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={downloadTemplate} title="Download Excel template">
+                  📥 Template
+                </button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileInputRef.current?.click()} title="Import questions from Excel file">
+                  📤 Import Excel
+                </button>
+                <input type="file" ref={fileInputRef} accept=".xlsx, .xls" onChange={importFromExcel} style={{ display: 'none' }} />
+                <button type="button" className="btn btn-primary btn-sm" onClick={addQuestion}>+ Add Manual</button>
+              </div>
             </div>
 
             {questions.map((q, qi) => (
@@ -179,6 +268,10 @@ export default function TestEditor() {
                         <input className="input-field option-input" required value={opt.text}
                           onChange={(e) => updateOption(qi, oi, 'text', e.target.value)}
                           placeholder={`Option ${String.fromCharCode(65 + oi)}`} />
+                        {q.options.length > 2 && (
+                          <button type="button" className="btn-remove-opt" title="Remove this option"
+                            onClick={() => removeOption(qi, oi)}>✕</button>
+                        )}
                       </div>
                       <div style={{ marginLeft: '42px', marginTop: '0.25rem' }}>
                         {opt.text && <MathRenderer text={opt.text} className="opt-preview" />}
@@ -191,8 +284,34 @@ export default function TestEditor() {
                       </div>
                     </div>
                   ))}
+                  <button type="button" className="btn-add-opt" onClick={() => addOption(qi)}>
+                    ＋ Add Option
+                  </button>
                 </div>
-                <p className="q-hint">Click the letter badge to mark the correct answer.</p>
+
+                {/* Explanation toggle */}
+                <div className="explanation-section">
+                  {!q.explanation && q.explanation !== undefined ? null : null}
+                  <button
+                    type="button"
+                    className={`btn-explanation-toggle ${q.explanation ? 'has-explanation' : ''}`}
+                    onClick={() => updateQ(qi, '_showExplanation', !q._showExplanation)}
+                  >
+                    💡 {q._showExplanation || q.explanation ? 'Explanation (optional)' : '+ Add Explanation'}
+                  </button>
+                  {(q._showExplanation || q.explanation) && (
+                    <textarea
+                      className="input-field explanation-input"
+                      rows={2}
+                      placeholder="Explain the correct answer… (shown to students after submission)"
+                      value={q.explanation || ''}
+                      onChange={(e) => updateQ(qi, 'explanation', e.target.value)}
+                      style={{ resize: 'vertical', marginTop: '0.5rem' }}
+                    />
+                  )}
+                </div>
+
+                <p className="q-hint">Click the letter badge to set the correct answer.</p>
               </div>
             ))}
           </div>
@@ -253,7 +372,37 @@ export default function TestEditor() {
         .correct-dot:hover:not(.active) { border-color: var(--color-success); color: var(--color-success); }
 
         .option-input { flex: 1; }
-        .q-hint { font-size: 0.75rem; color: var(--text-muted); }
+        .q-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+        .btn-remove-opt {
+          flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+          border: 1px solid var(--color-danger); color: var(--color-danger);
+          background: transparent; cursor: pointer; font-size: 0.75rem; font-weight: 700;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.15s ease; line-height: 1;
+        }
+        .btn-remove-opt:hover { background: var(--color-danger); color: white; }
+
+        .btn-add-opt {
+          margin-top: 0.375rem; display: inline-flex; align-items: center; gap: 0.4rem;
+          padding: 0.35rem 0.75rem; border-radius: var(--radius-md);
+          border: 1.5px dashed var(--color-primary); color: var(--color-primary);
+          background: transparent; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+          transition: all 0.15s ease;
+        }
+        .btn-add-opt:hover { background: var(--color-primary-light); }
+
+        .explanation-section { margin-top: 0.75rem; }
+        .btn-explanation-toggle {
+          display: inline-flex; align-items: center; gap: 0.4rem;
+          padding: 0.3rem 0.75rem; border-radius: var(--radius-full);
+          border: 1.5px dashed var(--color-warning); color: var(--color-warning);
+          background: transparent; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+          transition: all 0.15s ease;
+        }
+        .btn-explanation-toggle.has-explanation { border-style: solid; background: rgba(234,179,8,0.08); }
+        .btn-explanation-toggle:hover { background: rgba(234,179,8,0.1); }
+        .explanation-input { width: 100%; font-style: italic; color: var(--text-secondary); }
 
         .submit-row { display: flex; justify-content: flex-end; gap: 0.875rem; flex-wrap: wrap; }
         .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.8125rem; }

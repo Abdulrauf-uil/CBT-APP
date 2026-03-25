@@ -8,19 +8,15 @@ export default function AdminResultDetail() {
   const { resultId } = useParams();
   const navigate = useNavigate();
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchResult = async () => {
       const results = await getResults();
       const r = results.find((res) => res.id === resultId);
       setResult(r);
-      setLoading(false);
     };
     fetchResult();
   }, [resultId]);
-
-  if (loading) return <div className="manage-page"><Navbar role="admin" userName="Admin" /><main className="container">Loading...</main></div>;
 
   if (!result) {
     return (
@@ -135,6 +131,11 @@ export default function AdminResultDetail() {
                     </div>
                   )}
                 </div>
+                {q.explanation && (
+                  <div className="explanation-callout">
+                    💡 <strong>Explanation: </strong>{q.explanation}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -208,6 +209,18 @@ export default function AdminResultDetail() {
         }
         .bk-tag-green { background: rgba(34,197,94,0.15); color: #16a34a; }
         .bk-tag-red { background: rgba(239,68,68,0.15); color: var(--color-danger); }
+
+        .explanation-callout {
+          margin-top: 0.75rem;
+          padding: 0.625rem 0.875rem;
+          background: rgba(234,179,8,0.08);
+          border-left: 3px solid var(--color-warning);
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+          font-size: 0.875rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+        .explanation-callout strong { color: var(--color-warning); }
 
         .not-answered-alert {
           margin-top: 0.5rem; font-size: 0.8125rem; font-weight: 600;

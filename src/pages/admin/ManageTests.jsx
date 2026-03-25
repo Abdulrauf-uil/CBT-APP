@@ -7,20 +7,18 @@ export default function ManageTests() {
   const navigate = useNavigate();
   const [tests, setTests] = useState([]);
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const [results, setResults] = useState([]);
 
   const refresh = async () => {
-    setLoading(true);
     const [t, g, r] = await Promise.all([getTests(), getGroups(), getResults()]);
     setTests(t);
     setGroups(g);
     setResults(r);
-    setLoading(false);
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, []);
 

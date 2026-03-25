@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getTestById, getStudentSession, saveResult, getResultsByStudent } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 import MathRenderer from '../../components/common/MathRenderer';
+import Calculator from '../../components/common/Calculator';
 
 export default function TakeTest() {
   const { testId } = useParams();
@@ -10,12 +11,11 @@ export default function TakeTest() {
   const student = getStudentSession();
   const [test, setTest] = useState(null);
   const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,7 +40,6 @@ export default function TakeTest() {
           setTimeLeft(durationSecs);
         }
       }
-      setLoading(false);
     };
     fetchData();
   }, [testId, student?.id]);
@@ -71,8 +70,10 @@ export default function TakeTest() {
   useEffect(() => {
     if (!test || submitted) return;
     if (timeLeft <= 0) {
-      handleSubmit();
-      return;
+      const submitTimeout = setTimeout(() => {
+        handleSubmit();
+      }, 0);
+      return () => clearTimeout(submitTimeout);
     }
     const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearTimeout(id);
@@ -185,10 +186,21 @@ export default function TakeTest() {
           <span className="test-info-title">{test.title}</span>
           <span className="test-info-count">Question {current + 1} of {totalQ}</span>
         </div>
-        <div className={`timer-box ${timeWarning ? 'timer-warning' : ''}`}>
-          ⏱ {mins}:{secs}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={() => setShowCalculator(!showCalculator)}
+            style={{ fontWeight: 600 }}
+          >
+            🧮 Calculator
+          </button>
+          <div className={`timer-box ${timeWarning ? 'timer-warning' : ''}`}>
+            ⏱ {mins}:{secs}
+          </div>
         </div>
       </div>
+
+      {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
 
       {/* Progress Bar */}
       <div className="progress-bar-container">

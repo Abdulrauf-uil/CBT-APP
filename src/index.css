@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Colors */
-  --color-primary: #4F46E5; /* Indigo 600 */
-  --color-primary-hover: #4338CA;
-  --color-primary-light: #EEF2FF;
+  /* Colors - Vibrant Modern Palette */
+  --color-primary: #6366f1; /* Indigo 500 */
+  --color-primary-hover: #4f46e5;
+  --color-primary-light: #e0e7ff;
   
   --color-secondary: #0ea5e9;
   --color-secondary-hover: #0284c7;
 
-  --color-danger: #ef4444;
-  --color-danger-hover: #dc2626;
+  --color-danger: #f43f5e;
+  --color-danger-hover: #e11d48;
 
-  --color-success: #22c55e;
-  --color-warning: #eab308;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
 
   /* Typography */
   --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -32,15 +32,15 @@
   /* Borders */
   --border-color: #e2e8f0;
   
-  /* Shadows & Layout */
+  /* Shadows & Layout - Smoother and richer */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 6px 12px -2px rgb(0 0 0 / 0.06), 0 3px 6px -3px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.08), 0 6px 12px -6px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-md: 0.6rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-full: 9999px;
 
   /* Glass / Effects */
@@ -100,14 +100,15 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: 1px solid transparent;
   outline: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn:focus-visible {
@@ -115,23 +116,27 @@ a:hover {
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
+  box-shadow: none;
 }
 
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
+  border: none;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-  box-shadow: var(--shadow-md);
+  opacity: 0.95;
+  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+  transform: translateY(-2px);
 }
 
 .btn-secondary {
@@ -142,6 +147,8 @@ a:hover {
 
 .btn-secondary:hover:not(:disabled) {
   background-color: var(--bg-surface-hover);
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
 }
 
 .btn-danger {
@@ -201,14 +208,16 @@ a:hover {
 .card {
   background-color: var(--bg-surface);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.2);
 }
 
 /* Layout Utilities */
