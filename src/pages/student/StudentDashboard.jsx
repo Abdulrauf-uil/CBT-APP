@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTests, getStudentSession, getResultsByStudent } from '../../utils/storage';
+import { getTests, getStudentSession, getResultsByStudent, updateStudent, setStudentSession } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function StudentDashboard() {
@@ -8,6 +8,11 @@ export default function StudentDashboard() {
   const student = getStudentSession();
   const [tests, setTests] = useState([]);
   const [results, setResults] = useState([]);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isUpdatingPwd, setIsUpdatingPwd] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,13 +35,55 @@ export default function StudentDashboard() {
     return testResults.sort((a, b) => b.submittedAt - a.submittedAt)[0].id;
   };
 
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    if (passwordForm.current !== student?.password) {
+      setPasswordError('Current password is incorrect.');
+      return;
+    }
+    if (passwordForm.new !== passwordForm.confirm) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+    if (passwordForm.new.length < 6) {
+      setPasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+    
+    try {
+      setIsUpdatingPwd(true);
+      await updateStudent(student.id, { password: passwordForm.new });
+      const updatedStudent = { ...student, password: passwordForm.new };
+      setStudentSession(updatedStudent);
+      setPasswordSuccess('Password successfully updated!');
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordForm({ current: '', new: '', confirm: '' });
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      setPasswordError('Failed to update password. Please try again.');
+    } finally {
+      setIsUpdatingPwd(false);
+    }
+  };
+
   return (
     <div className="student-dash-page">
       <Navbar role="student" userName={student?.name} />
       <main className="container animate-slide-up" style={{ padding: '2.5rem 1rem' }}>
-        <div className="page-header">
-          <h1>Welcome, {student?.name}! 👋</h1>
-          <p>Select a test below to begin. Make sure you're ready before starting — the timer begins immediately.</p>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1>Welcome, {student?.name}! 👋</h1>
+            <p>Select a test below to begin. Make sure you're ready before starting — the timer begins immediately.</p>
+          </div>
+          <button className="btn btn-secondary" onClick={() => setShowPasswordModal(true)}>
+            Change Password
+          </button>
         </div>
 
         {tests.length === 0 ? (
@@ -90,6 +137,54 @@ export default function StudentDashboard() {
         )}
       </main>
 
+      {showPasswordModal && (
+        <div className="modal-overlay">
+          <div className="modal-content card">
+            <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Change Password</h2>
+            {passwordError && <div className="alert alert-danger">{passwordError}</div>}
+            {passwordSuccess && <div className="alert alert-success">{passwordSuccess}</div>}
+            <form onSubmit={handlePasswordChange}>
+              <div className="form-group">
+                <label>Current Password</label>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  value={passwordForm.current} 
+                  onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })} 
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label>New Password</label>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  value={passwordForm.new} 
+                  onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })} 
+                  required 
+                />
+              </div>
+              <div className="form-group">
+                <label>Confirm New Password</label>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  value={passwordForm.confirm} 
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })} 
+                  required 
+                />
+              </div>
+              <div className="modal-actions" style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowPasswordModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={isUpdatingPwd}>
+                  {isUpdatingPwd ? 'Updating...' : 'Save Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .student-dash-page { min-height: 100vh; }
         .page-header { margin-bottom: 2rem; }
@@ -138,6 +233,25 @@ export default function StudentDashboard() {
           padding: 3rem; text-align: center; color: var(--text-muted);
         }
         .empty-state span { font-size: 3rem; }
+
+        .modal-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+          display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+          background: var(--bg-surface); padding: 2rem; border-radius: var(--radius-lg);
+          width: 90%; max-width: 400px;
+        }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9375rem; color: var(--text-primary); }
+        .form-control { 
+          width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); 
+          border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-primary); 
+        }
+        .form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-light); }
+        .alert { padding: 0.75rem; border-radius: var(--radius-md); margin-bottom: 1rem; font-size: 0.9375rem; }
+        .alert-danger { background: var(--color-danger-light); color: var(--color-danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .alert-success { background: rgba(34,197,94,0.1); color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.2); }
       `}</style>
     </div>
   );

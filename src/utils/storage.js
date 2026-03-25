@@ -103,6 +103,10 @@ export const removeStudent = async (id) => {
   await Promise.all(deletePromises);
 };
 
+export const updateStudent = async (id, updatedFields) => {
+  await updateDoc(doc(db, KEYS.STUDENTS, id), updatedFields);
+};
+
 export const validateStudent = async (email, password) => {
   const q = query(collection(db, KEYS.STUDENTS), where("email", "==", email), where("password", "==", password));
   const snap = await getDocs(q);
