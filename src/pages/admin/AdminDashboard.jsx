@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getStudents, getTests } from '../../utils/storage';
+import { getStudents, getTests, migrateToCloud } from '../../utils/storage';
 import Navbar from '../../components/layout/Navbar';
 
 export default function AdminDashboard() {
@@ -57,7 +57,6 @@ export default function AdminDashboard() {
             className="btn btn-secondary btn-sm" 
             onClick={async () => {
               if (confirm('Migrate all local data to Firestore? This will merge your current device data with the cloud database.')) {
-                const { migrateToCloud } = await import('../../utils/storage');
                 await migrateToCloud();
                 alert('Migration complete!');
                 window.location.reload();
